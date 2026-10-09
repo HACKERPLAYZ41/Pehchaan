@@ -57,12 +57,13 @@ class Database
                 $charset = $myConf['charset'] ?? 'utf8mb4';
 
                 $dsn = sprintf("mysql:host=%s;port=%d;dbname=%s;charset=%s", $host, $port, $database, $charset);
-                $options = array_merge([
+                $defaultOptions = [
                     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                     PDO::ATTR_EMULATE_PREPARES => false,
                     PDO::ATTR_TIMEOUT => 5,
-                ], $myConf['options'] ?? []);
+                ];
+                $options = ($myConf['options'] ?? []) + $defaultOptions;
 
                 try {
                     self::$instance = new PDO($dsn, $myConf['username'] ?? 'root', $myConf['password'] ?? '', $options);
