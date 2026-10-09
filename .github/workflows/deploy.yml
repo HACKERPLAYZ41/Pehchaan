@@ -36,33 +36,29 @@ jobs:
           rm -rf public_html/assets/*
           cp -r frontend/dist/* public_html/
 
-      - name: 🚀 Deploy Backend to cPanel
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: ${{ secrets.CPANEL_FTP_SERVER }}
-          username: ${{ secrets.CPANEL_FTP_USERNAME }}
-          password: ${{ secrets.CPANEL_FTP_PASSWORD }}
-          port: ${{ secrets.CPANEL_FTP_PORT || 21 }}
-          local-dir: ./backend/
-          server-dir: ./backend/
-          security: 'loose'
-          dangerous-clean-slate: false
+      - name: 🛠️ Install lftp Client
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq lftp
 
-      - name: ⏳ Connection Cooldown
-        run: sleep 5
-
-      - name: 🚀 Deploy public_html to cPanel
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: ${{ secrets.CPANEL_FTP_SERVER }}
-          username: ${{ secrets.CPANEL_FTP_USERNAME }}
-          password: ${{ secrets.CPANEL_FTP_PASSWORD }}
-          port: ${{ secrets.CPANEL_FTP_PORT || 21 }}
-          local-dir: ./public_html/
-          server-dir: ./public_html/
-          security: 'loose'
-          exclude: |
-            **/*.pptx
-            **/*.ppt
-            **/*.zip
-          dangerous-clean-slate: false
+      - name: 🚀 Mirror to cPanel via lftp (Auto-Retry & Resilient Transfer)
+        env:
+          FTP_SERVER: ${{ secrets.CPANEL_FTP_SERVER }}
+          FTP_USER: ${{ secrets.CPANEL_FTP_USERNAME }}
+          FTP_PASS: ${{ secrets.CPANEL_FTP_PASSWORD }}
+          FTP_PORT: ${{ secrets.CPANEL_FTP_PORT || '21' }}
+        run: |
+          lftp -c "
+            set ssl:verify-certificate no;
+            set ftp:ssl-allow auto;
+            set ftp:passive-mode true;
+            set net:timeout 30;
+            set net:max-retries 10;
+            set net:reconnect-interval-base 3;
+            open -u \"$FTP_USER\",\"$FTP_PASS\" -p $FTP_PORT \"$FTP_SERVER\";
+            echo 'Uploading backend directory...';
+            mirror -R --verbose --exclude-glob '*.pptx' --exclude-glob '*.ppt' backend/ backend/;
+            echo 'Uploading public_html directory...';
+            mirror -R --verbose --exclude-glob '*.pptx' --exclude-glob '*.ppt' public_html/ public_html/;
+            quit;
+          "
