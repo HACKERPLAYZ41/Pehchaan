@@ -8,7 +8,7 @@ on:
 
 jobs:
   build-and-deploy:
-    name: Build Frontend & Deploy to cPanel
+    name: Build Frontend (dist) & Deploy to cPanel
     runs-on: ubuntu-latest
 
     steps:
@@ -26,22 +26,16 @@ jobs:
         working-directory: ./frontend
         run: npm ci
 
-      - name: 🏗️ Build Production Bundle
+      - name: 🏗️ Build Production Bundle (dist)
         working-directory: ./frontend
         run: npm run build
-
-      - name: 🔄 Sync Dist to public_html
-        run: |
-          mkdir -p public_html/assets
-          rm -rf public_html/assets/*
-          cp -r frontend/dist/* public_html/
 
       - name: 🛠️ Install lftp Client
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq lftp
 
-      - name: 🚀 Mirror to cPanel via lftp (Auto-Retry & Resilient Transfer)
+      - name: 🚀 Upload dist contents directly to cPanel
         env:
           FTP_SERVER: ${{ secrets.CPANEL_FTP_SERVER }}
           FTP_USER: ${{ secrets.CPANEL_FTP_USERNAME }}
@@ -56,9 +50,14 @@ jobs:
             set net:max-retries 10;
             set net:reconnect-interval-base 3;
             open -u \"$FTP_USER\",\"$FTP_PASS\" -p $FTP_PORT \"$FTP_SERVER\";
-            echo 'Uploading backend directory...';
-            mirror -R --verbose --exclude-glob '*.pptx' --exclude-glob '*.ppt' backend/ backend/;
-            echo 'Uploading public_html directory...';
-            mirror -R --verbose --exclude-glob '*.pptx' --exclude-glob '*.ppt' public_html/ public_html/;
+            
+            # Detect whether root is already public_html or if public_html subfolder exists
+            if cd public_html; then
+              echo 'Found public_html folder, uploading dist files into public_html/...';
+              mirror -R --verbose frontend/dist/ .;
+            else
+              echo 'Root is the target directory, uploading dist files directly into root...';
+              mirror -R --verbose frontend/dist/ .;
+            fi;
             quit;
           "
