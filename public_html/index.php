@@ -7,22 +7,25 @@ declare(strict_types=1);
  */
 
 // Simple lightweight .env loader
-$envFile = __DIR__ . '/../.env';
-if (file_exists($envFile) && is_readable($envFile)) {
-    $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-    foreach ($lines as $line) {
-        $line = trim($line);
-        if (empty($line) || str_starts_with($line, '#')) continue;
-        if (str_contains($line, '=')) {
-            [$k, $v] = explode('=', $line, 2);
-            $k = trim($k);
-            $v = trim($v, " \t\n\r\0\x0B\"'");
-            if (!empty($k)) {
-                putenv("{$k}={$v}");
-                $_ENV[$k] = $v;
-                $_SERVER[$k] = $v;
+$envCandidates = [__DIR__ . '/../backend/.env', __DIR__ . '/../.env', __DIR__ . '/.env'];
+foreach ($envCandidates as $envFile) {
+    if (file_exists($envFile) && is_readable($envFile)) {
+        $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if (empty($line) || str_starts_with($line, '#')) continue;
+            if (str_contains($line, '=')) {
+                [$k, $v] = explode('=', $line, 2);
+                $k = trim($k);
+                $v = trim($v, " \t\n\r\0\x0B\"'");
+                if (!empty($k)) {
+                    putenv("{$k}={$v}");
+                    $_ENV[$k] = $v;
+                    $_SERVER[$k] = $v;
+                }
             }
         }
+        break;
     }
 }
 
