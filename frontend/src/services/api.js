@@ -4,7 +4,7 @@
  * to ensure 100% operational UI when running under local Vite dev server.
  */
 
-const BASE_URL = '/api';
+const BASE_URL = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) || '/api';
 
 // Fallback Mock State
 let mockBrand = {
@@ -75,11 +75,17 @@ let mockDetections = [
 ];
 
 async function request(endpoint, options = {}) {
+  const controller = new AbortController();
+  const timeoutMs = options.timeout || 2500;
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
   const config = {
+    method: options.method || 'GET',
     headers: {
       'Accept': 'application/json',
       ...options.headers,
     },
+    signal: options.signal || controller.signal,
     ...options,
   };
 
@@ -90,6 +96,7 @@ async function request(endpoint, options = {}) {
 
   try {
     const res = await fetch(`${BASE_URL}${endpoint}`, config);
+    clearTimeout(timeoutId);
     const contentType = res.headers.get('content-type');
     let data = null;
 
@@ -113,9 +120,10 @@ async function request(endpoint, options = {}) {
 
     return data || { status: 'ok' };
   } catch (err) {
-    // If backend returns a structured error (like 404, 429, 400), throw it to caller
-    if (err.status) throw err;
-    // Otherwise fallback for local dev server testing
+    clearTimeout(timeoutId);
+    // If backend returns a structured client error (like 400, 401, 422), throw it to caller
+    if (err.status && err.status < 500) throw err;
+    // Otherwise fallback for local dev server testing or cold backend proxy
     return handleFallback(endpoint, options);
   }
 }
