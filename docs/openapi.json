@@ -1,0 +1,230 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Pehchaan (पहचान) - Digital Risk Protection API",
+    "description": "Enterprise-grade Brand Impersonation & Digital Threat Intelligence Platform API for cPanel and Cloud Hosting.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Pehchaan Security Operations",
+      "email": "security@blockcode.in",
+      "url": "https://pehchaan.blockcode.in"
+    },
+    "license": {
+      "name": "MIT"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://pehchaan.blockcode.in/api",
+      "description": "Production cPanel Gateway"
+    },
+    {
+      "url": "http://localhost:8000/api",
+      "description": "Local Development Server"
+    }
+  ],
+  "paths": {
+    "/workspace": {
+      "get": {
+        "summary": "Get or initialize anonymous workspace session",
+        "description": "Returns current active workspace state or registers a new anonymous workspace with 7-day TTL.",
+        "responses": {
+          "200": {
+            "description": "Workspace details"
+          }
+        }
+      },
+      "delete": {
+        "summary": "DPDP Act Complete Workspace Erasure",
+        "description": "Permanently deletes all brand data, detections, scan history, and session records.",
+        "responses": {
+          "200": {
+            "description": "Workspace data purged"
+          }
+        }
+      }
+    },
+    "/workspace/consent": {
+      "post": {
+        "summary": "Record DPDP Act 2023 Consent",
+        "description": "Records explicit, unbundled user consent prior to initiating scans.",
+        "responses": {
+          "200": {
+            "description": "Consent status updated"
+          }
+        }
+      }
+    },
+    "/brand": {
+      "get": {
+        "summary": "Retrieve Brand Profile",
+        "description": "Fetches current brand profile, official assets, completeness meter, and logo dHash.",
+        "responses": {
+          "200": {
+            "description": "Brand profile object"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create or update Brand Profile",
+        "description": "Stores brand name, aliases, description, and official asset whitelist.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["brand_name"],
+                "properties": {
+                  "brand_name": { "type": "string" },
+                  "aliases": { "type": "array", "items": { "type": "string" } },
+                  "description": { "type": "string" },
+                  "official_assets": { "type": "array" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated profile"
+          }
+        }
+      }
+    },
+    "/brand/sample": {
+      "post": {
+        "summary": "Load Fictional Sample Brand",
+        "description": "Pre-populates workspace with sample brand 'Lumora Bank' and official whitelist assets.",
+        "responses": {
+          "200": {
+            "description": "Sample brand loaded"
+          }
+        }
+      }
+    },
+    "/brand/logo": {
+      "post": {
+        "summary": "Upload & Sanitize Brand Logo",
+        "description": "Validates image magic-bytes (PNG/JPG/WebP <=2MB, strictly NO SVG), strips EXIF, computes 64-bit dHash.",
+        "responses": {
+          "200": {
+            "description": "Logo uploaded and hashed"
+          }
+        }
+      }
+    },
+    "/scan/social": {
+      "post": {
+        "summary": "Run Social Threat Scan",
+        "description": "Queries live Bluesky XRPC search and scores candidate accounts.",
+        "responses": {
+          "200": {
+            "description": "Scan run results"
+          }
+        }
+      }
+    },
+    "/scan/apps": {
+      "post": {
+        "summary": "Run App Store Threat Scan",
+        "description": "Queries Apple iTunes Software API and Google Play Store for unauthorized apps.",
+        "responses": {
+          "200": {
+            "description": "Scan run results"
+          }
+        }
+      }
+    },
+    "/scan/full": {
+      "post": {
+        "summary": "Run Full Multi-Platform Threat Scan",
+        "description": "Executes simultaneous detection across social networks and app stores.",
+        "responses": {
+          "200": {
+            "description": "Comprehensive scan findings"
+          }
+        }
+      }
+    },
+    "/detections": {
+      "get": {
+        "summary": "List Detected Threats",
+        "description": "Returns filterable detections with granular signal evidence and character diffs.",
+        "parameters": [
+          { "name": "platform", "in": "query", "schema": { "type": "string" } },
+          { "name": "severity", "in": "query", "schema": { "type": "string" } },
+          { "name": "status", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Array of threat detections"
+          }
+        }
+      }
+    },
+    "/detections/triage": {
+      "post": {
+        "summary": "Triage Threat Finding",
+        "description": "Updates status to confirmed, false_positive (adds to allowlist), or dismissed.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["detection_id", "status"],
+                "properties": {
+                  "detection_id": { "type": "string" },
+                  "status": { "type": "string", "enum": ["confirmed", "false_positive", "dismissed"] },
+                  "notes": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Triage updated"
+          }
+        }
+      }
+    },
+    "/export/csv": {
+      "get": {
+        "summary": "Export Triage Report as CSV",
+        "description": "Generates a sanitized CSV file containing all detections and algorithmic evidence.",
+        "responses": {
+          "200": {
+            "description": "CSV stream"
+          }
+        }
+      }
+    },
+    "/takedown/draft": {
+      "get": {
+        "summary": "Generate Legal Takedown Notice Draft",
+        "description": "Produces a ready-to-dispatch CERT-In / DMCA abuse takedown letter with evidence table.",
+        "parameters": [
+          { "name": "detection_id", "in": "query", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Formatted takedown letter"
+          }
+        }
+      }
+    },
+    "/sources/health": {
+      "get": {
+        "summary": "Connector Health & Latency Monitor",
+        "description": "Checks status (live | cached | unavailable) and response latency for all external platforms.",
+        "responses": {
+          "200": {
+            "description": "Health status of connectors"
+          }
+        }
+      }
+    }
+  }
+}

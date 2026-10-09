@@ -1,0 +1,64 @@
+# ==============================================================================
+# Pehchaan (पहचान) - Production Apache / cPanel .htaccess Configuration
+# Full React SPA Client Routing + PHP API Gateway Integration
+# ==============================================================================
+
+# 1. Custom Error Pages
+ErrorDocument 404 /404.shtml
+
+# 2. Disable Directory Listing
+Options -Indexes -MultiViews
+
+# 3. Security Headers
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "DENY"
+    Header set X-XSS-Protection "1; mode=block"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# 4. Rewrite Rules for React SPA + PHP API Gateway
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # Force HTTPS in Production
+    RewriteCond %{HTTPS} !=on
+    RewriteCond %{HTTP_HOST} ^pehchaan\.blockcode\.in$ [NC]
+    RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+    # Block sensitive hidden files (.env, .git, .htaccess, etc.)
+    RewriteRule (^|/)\.(?!well-known) - [F]
+
+    # --------------------------------------------------------------------------
+    # RULE A: API Endpoints -> Route to PHP Gateway
+    # Handles: /api/workspace, /api/brand, /api/scan, /api/detections, etc.
+    # --------------------------------------------------------------------------
+    RewriteRule ^api(/.*)?$ api/index.php [QSA,L]
+
+    # --------------------------------------------------------------------------
+    # RULE B: Real Static Files & Uploads -> Serve Directly
+    # Handles: /assets/index.js, /assets/index.css, /uploads/logo.png, /favicon.ico
+    # --------------------------------------------------------------------------
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # --------------------------------------------------------------------------
+    # RULE C: React SPA Client-Side Routes -> Fallback to index.html
+    # Solves 404 Error on page refresh for /brand, /scan, /detections, /privacy, etc.
+    # --------------------------------------------------------------------------
+    RewriteRule ^ index.html [L]
+</IfModule>
+
+# 5. Prevent script execution in uploads directory
+<Directory "uploads">
+    <FilesMatch "\.(php|phtml|php3|php4|php5|php7|php8|phps|cgi|pl|py|sh)$">
+        Require all denied
+    </FilesMatch>
+</Directory>
+
+# 6. Enable Gzip Compression for Fast Loading
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/plain text/html text/xml text/css application/xml application/xhtml+xml application/rss+xml application/javascript application/x-javascript application/json
+</IfModule>

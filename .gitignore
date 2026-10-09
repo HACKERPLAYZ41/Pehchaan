@@ -1,0 +1,29 @@
+# Node dependencies
+node_modules/
+*/node_modules/
+
+# Build artifacts
+dist/
+frontend/dist/
+build/
+*.local
+
+# Environment & secrets
+.env
+*.env
+!.env.example
+
+# IDE & system
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log
+npm-debug.log*
+
+# AI Agent runtime artifacts
+.gemini/
+.agent/
+.agents/
+.archify/
+scratch/

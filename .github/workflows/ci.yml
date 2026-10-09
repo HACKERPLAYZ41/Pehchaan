@@ -1,0 +1,37 @@
+name: Pehchaan CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test-and-verify:
+    name: PHP Lint, Unit Tests & Benchmarks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Set up PHP 8.3 Environment
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, pdo, pdo_sqlite, gd, curl, intl
+          coverage: none
+
+      - name: Validate PHP Syntax (Lint)
+        run: |
+          find backend/src -name "*.php" -print0 | xargs -0 -n1 php -l
+          find public_html -name "*.php" -print0 | xargs -0 -n1 php -l
+
+      - name: Run SSRF Security Boundary Tests
+        run: php backend/tests/Unit/SSRFGuardTest.php
+
+      - name: Run Algorithmic Unit Tests & Precision/Recall Benchmark
+        run: php backend/tests/run_tests.php
+
+      - name: Run End-to-End API Integration Suite
+        run: php backend/tests/E2E/ApiIntegrationTest.php
