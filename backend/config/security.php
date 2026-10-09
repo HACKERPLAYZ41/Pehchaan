@@ -6,22 +6,29 @@ declare(strict_types=1);
  * Enforces strict Content Security Policy, Cookie attributes & SSRF IP filters
  */
 
+$getVal = function (string $key, $default = null) {
+    if (isset($_ENV[$key]) && $_ENV[$key] !== '') return $_ENV[$key];
+    if (isset($_SERVER[$key]) && $_SERVER[$key] !== '') return $_SERVER[$key];
+    $val = getenv($key);
+    return ($val !== false && $val !== '') ? $val : $default;
+};
+
 return [
-    'app_env' => getenv('APP_ENV') ?: 'production',
-    'app_debug' => filter_var(getenv('APP_DEBUG') ?: false, FILTER_VALIDATE_BOOLEAN),
-    'app_url' => getenv('APP_URL') ?: 'https://pehchaan.blockcode.in',
-    'app_secret' => getenv('APP_SECRET') ?: 'pehchaan-default-change-me-in-production-secret-key-32b',
+    'app_env' => $getVal('APP_ENV', 'production'),
+    'app_debug' => filter_var($getVal('APP_DEBUG', false), FILTER_VALIDATE_BOOLEAN),
+    'app_url' => $getVal('APP_URL', 'https://pehchaan.blockcode.in'),
+    'app_secret' => $getVal('APP_SECRET', 'pehchaan-default-change-me-in-production-secret-key-32b'),
 
     // Rate Limiting Policy
     'rate_limit' => [
-        'max_requests' => (int)(getenv('RATE_LIMIT_REQUESTS') ?: 60),
-        'window_seconds' => (int)(getenv('RATE_LIMIT_WINDOW_SECONDS') ?: 60),
+        'max_requests' => (int)$getVal('RATE_LIMIT_REQUESTS', 60),
+        'window_seconds' => (int)$getVal('RATE_LIMIT_WINDOW_SECONDS', 60),
     ],
 
     // Data Retention (DPDP Act India 2023)
     'retention' => [
-        'workspace_ttl_days' => (int)(getenv('WORKSPACE_TTL_DAYS') ?: 7),
-        'dismissed_ttl_days' => (int)(getenv('DISMISSED_TTL_DAYS') ?: 30),
+        'workspace_ttl_days' => (int)$getVal('WORKSPACE_TTL_DAYS', 7),
+        'dismissed_ttl_days' => (int)$getVal('DISMISSED_TTL_DAYS', 30),
     ],
 
     // Cookie Security Settings

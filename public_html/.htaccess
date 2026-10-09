@@ -3,8 +3,9 @@
 # Full React SPA Client Routing + PHP API Gateway Integration
 # ==============================================================================
 
-# 1. Custom Error Pages
+# 1. Custom Error Pages & Directory Index
 ErrorDocument 404 /404.shtml
+DirectoryIndex index.html index.php
 
 # 2. Disable Directory Listing
 Options -Indexes -MultiViews

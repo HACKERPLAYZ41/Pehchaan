@@ -6,14 +6,21 @@ declare(strict_types=1);
  * Dispatches real-time structured embeds for High/Critical threat detections and security incidents.
  */
 
+$getVal = function (string $key, $default = null) {
+    if (isset($_ENV[$key]) && $_ENV[$key] !== '') return $_ENV[$key];
+    if (isset($_SERVER[$key]) && $_SERVER[$key] !== '') return $_SERVER[$key];
+    $val = getenv($key);
+    return ($val !== false && $val !== '') ? $val : $default;
+};
+
 return [
-    'enabled' => filter_var(getenv('DISCORD_ALERTS_ENABLED') ?: true, FILTER_VALIDATE_BOOLEAN),
-    'webhook_url' => getenv('DISCORD_WEBHOOK_URL') ?: '',
+    'enabled' => filter_var($getVal('DISCORD_ALERTS_ENABLED', true), FILTER_VALIDATE_BOOLEAN),
+    'webhook_url' => $getVal('DISCORD_WEBHOOK_URL', ''),
     'bot_username' => 'Pehchaan Sentinel',
     'avatar_url' => 'https://pehchaan.blockcode.in/assets/sentinel-avatar.png',
     
     // Severity filters: only dispatch alerts if severity matches or exceeds this level
-    'min_severity' => getenv('DISCORD_MIN_SEVERITY') ?: 'HIGH',
+    'min_severity' => $getVal('DISCORD_MIN_SEVERITY', 'HIGH'),
     
     // Embed Color Palette (Hex integer for Discord Embeds)
     'colors' => [

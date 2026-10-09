@@ -27,3 +27,8 @@ npm-debug.log*
 .agents/
 .archify/
 scratch/
+
+# Local databases
+*.sqlite
+database/
+cpanel_deploy/

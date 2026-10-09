@@ -6,44 +6,57 @@ declare(strict_types=1);
  * Serves REST endpoints with strict security, rate limiting, and exception isolation.
  */
 
-// Simple lightweight .env loader
-$envCandidates = [__DIR__ . '/../backend/.env', __DIR__ . '/../.env', __DIR__ . '/.env'];
+// Multi-location .env loader
+$envCandidates = [
+    __DIR__ . '/../.env',
+    __DIR__ . '/.env',
+    __DIR__ . '/../backend/.env',
+    __DIR__ . '/backend/.env',
+];
 foreach ($envCandidates as $envFile) {
     if (file_exists($envFile) && is_readable($envFile)) {
-        $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-        foreach ($lines as $line) {
-            $line = trim($line);
-            if (empty($line) || str_starts_with($line, '#')) continue;
-            if (str_contains($line, '=')) {
-                [$k, $v] = explode('=', $line, 2);
-                $k = trim($k);
-                $v = trim($v, " \t\n\r\0\x0B\"'");
-                if (!empty($k)) {
-                    putenv("{$k}={$v}");
-                    $_ENV[$k] = $v;
-                    $_SERVER[$k] = $v;
+        $lines = @file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        if ($lines) {
+            foreach ($lines as $line) {
+                $line = trim($line);
+                if (empty($line) || str_starts_with($line, '#')) continue;
+                if (str_contains($line, '=')) {
+                    [$k, $v] = explode('=', $line, 2);
+                    $k = trim($k);
+                    $v = trim($v, " \t\n\r\0\x0B\"'");
+                    if (!empty($k)) {
+                        putenv("{$k}={$v}");
+                        $_ENV[$k] = $v;
+                        $_SERVER[$k] = $v;
+                    }
                 }
             }
         }
-        break;
     }
 }
 
-// PSR-4 autoloader
+// Resilient PSR-4 autoloader for cPanel deployment
 spl_autoload_register(function ($class) {
     $prefix = 'Pehchaan\\';
-    $baseDir = __DIR__ . '/../backend/src/';
-
     $len = strlen($prefix);
     if (strncmp($prefix, $class, $len) !== 0) {
         return;
     }
 
     $relativeClass = substr($class, $len);
-    $file = $baseDir . str_replace('\\', '/', $relativeClass) . '.php';
+    $path = str_replace('\\', '/', $relativeClass) . '.php';
 
-    if (file_exists($file)) {
-        require_once $file;
+    $candidates = [
+        __DIR__ . '/backend/src/' . $path,
+        __DIR__ . '/../backend/src/' . $path,
+        __DIR__ . '/src/' . $path,
+    ];
+
+    foreach ($candidates as $file) {
+        if (file_exists($file)) {
+            require_once $file;
+            return;
+        }
     }
 });
 
@@ -61,22 +74,32 @@ try {
     // Apply Security Headers (CSP, HSTS, X-Content-Type-Options)
     Response::applySecurityHeaders();
 
-$method = Request::getMethod();
-$uri = Request::getUri();
+    $method = Request::getMethod();
+    $uri = Request::getUri();
 
-// Strip base prefix if hosted under /api
-$uri = preg_replace('/^\/api/', '', $uri) ?: '/';
+    // Fast-path CORS preflight
+    if ($method === 'OPTIONS') {
+        header('Access-Control-Allow-Origin: *');
+        header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+        header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, X-Workspace-Token, X-CSRF-Token');
+        http_response_code(204);
+        exit;
+    }
 
-// Direct health check without DB requirement
-if ($uri === '/' || $uri === '/health') {
-    Response::json([
-        'system' => 'Pehchaan Digital Risk Protection API',
-        'version' => '1.0.0',
-        'status' => 'operational',
-        'environment' => 'cPanel Production',
-        'dpdp_act_compliant' => true,
-    ]);
-}
+    // Strip base prefixes if routed via /index.php or /api
+    $uri = preg_replace('/^\/index\.php/', '', $uri);
+    $uri = preg_replace('/^\/api/', '', $uri) ?: '/';
+
+    // Direct health check without DB requirement
+    if ($uri === '/' || $uri === '/health') {
+        Response::json([
+            'system' => 'Pehchaan Digital Risk Protection API',
+            'version' => '1.0.0',
+            'status' => 'operational',
+            'environment' => 'cPanel Production',
+            'dpdp_act_compliant' => true,
+        ]);
+    }
 
 // 1. Rate Limiting Check
 $clientIp = Request::getClientIp();
@@ -300,7 +323,13 @@ if (!headers_sent()) {
 
 } catch (InvalidArgumentException $e) {
     Response::error($e->getMessage(), 400);
-} catch (Exception $e) {
-    error_log("[Pehchaan Gateway Exception] " . $e->getMessage());
-    Response::error("An internal server error occurred.", 500);
+} catch (\Throwable $e) {
+    error_log("[Pehchaan Gateway Exception] " . $e->getMessage() . " in " . $e->getFile() . ":" . $e->getLine());
+    $debug = filter_var($_ENV['APP_DEBUG'] ?? $_SERVER['APP_DEBUG'] ?? getenv('APP_DEBUG') ?: false, FILTER_VALIDATE_BOOLEAN) || !empty($_GET['debug']);
+    $details = $debug ? [
+        'debug_error' => $e->getMessage(),
+        'file' => basename($e->getFile()),
+        'line' => $e->getLine()
+    ] : [];
+    Response::error("An internal server error occurred.", 500, $details);
 }

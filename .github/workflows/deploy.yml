@@ -30,12 +30,38 @@ jobs:
         working-directory: ./frontend
         run: npm run build
 
+      - name: 📦 Assemble Full-Stack Deployment Package
+        run: |
+          mkdir -p cpanel_deploy
+          
+          # 1. Copy built frontend SPA files (index.html, assets, icons)
+          cp -r frontend/dist/* cpanel_deploy/
+          
+          # 2. Copy production Apache .htaccess and API gateway router
+          cp public_html/.htaccess cpanel_deploy/.htaccess
+          cp public_html/index.php cpanel_deploy/index.php
+          mkdir -p cpanel_deploy/api
+          cp public_html/api/index.php cpanel_deploy/api/index.php
+          
+          # 3. Copy backend source code, configuration, and database schemas
+          mkdir -p cpanel_deploy/backend
+          cp -r backend/src cpanel_deploy/backend/src
+          cp -r backend/config cpanel_deploy/backend/config
+          cp -r backend/database cpanel_deploy/backend/database
+          
+          # 4. Ensure uploads directory exists with .gitkeep
+          mkdir -p cpanel_deploy/uploads
+          touch cpanel_deploy/uploads/.gitkeep
+          
+          echo "Full-stack package assembled successfully:"
+          ls -la cpanel_deploy
+
       - name: 🛠️ Install lftp Client
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq lftp
 
-      - name: 🚀 Upload dist contents directly to cPanel
+      - name: 🚀 Upload Full Stack directly to cPanel
         env:
           FTP_SERVER: ${{ secrets.CPANEL_FTP_SERVER }}
           FTP_USER: ${{ secrets.CPANEL_FTP_USERNAME }}
@@ -51,13 +77,14 @@ jobs:
             set net:reconnect-interval-base 3;
             open -u \"$FTP_USER\",\"$FTP_PASS\" -p $FTP_PORT \"$FTP_SERVER\";
             
+            # Preserve server's existing .env file and .git files while syncing
             # Detect whether root is already public_html or if public_html subfolder exists
             if cd public_html; then
-              echo 'Found public_html folder, uploading dist files into public_html/...';
-              mirror -R --verbose frontend/dist/ .;
+              echo 'Found public_html folder, uploading full stack into public_html/...';
+              mirror -R --verbose --exclude-glob .git* --exclude-glob .env* cpanel_deploy/ .;
             else
-              echo 'Root is the target directory, uploading dist files directly into root...';
-              mirror -R --verbose frontend/dist/ .;
+              echo 'Root is target directory, uploading full stack directly into root...';
+              mirror -R --verbose --exclude-glob .git* --exclude-glob .env* cpanel_deploy/ .;
             fi;
             quit;
           "
