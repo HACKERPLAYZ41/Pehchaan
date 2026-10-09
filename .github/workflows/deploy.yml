@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch: # Allows manual trigger from GitHub Actions tab
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:
@@ -32,7 +32,8 @@ jobs:
 
       - name: 🔄 Sync Dist to public_html
         run: |
-          mkdir -p public_html
+          mkdir -p public_html/assets
+          rm -rf public_html/assets/*
           cp -r frontend/dist/* public_html/
 
       - name: 🚀 Deploy Backend to cPanel
@@ -44,7 +45,11 @@ jobs:
           port: ${{ secrets.CPANEL_FTP_PORT || 21 }}
           local-dir: ./backend/
           server-dir: ./backend/
+          security: 'loose'
           dangerous-clean-slate: false
+
+      - name: ⏳ Connection Cooldown
+        run: sleep 5
 
       - name: 🚀 Deploy public_html to cPanel
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
@@ -55,4 +60,9 @@ jobs:
           port: ${{ secrets.CPANEL_FTP_PORT || 21 }}
           local-dir: ./public_html/
           server-dir: ./public_html/
+          security: 'loose'
+          exclude: |
+            **/*.pptx
+            **/*.ppt
+            **/*.zip
           dangerous-clean-slate: false
