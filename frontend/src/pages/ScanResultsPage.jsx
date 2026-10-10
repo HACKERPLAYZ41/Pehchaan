@@ -43,7 +43,7 @@ export function ScanResultsPage({ onNavigate, brand, onLoadSample, onResetWorksp
   });
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f8f9ff' }}>
+    <div className="dashboard-layout-container">
       <Sidebar 
         currentView="scans" 
         onNavigate={onNavigate} 
@@ -52,7 +52,7 @@ export function ScanResultsPage({ onNavigate, brand, onLoadSample, onResetWorksp
         onResetWorkspace={onResetWorkspace}
       />
 
-      <main style={{ flex: 1, padding: '32px', overflowY: 'auto' }}>
+      <main className="dashboard-main-content">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
           <div>
             <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#0f172a' }}>

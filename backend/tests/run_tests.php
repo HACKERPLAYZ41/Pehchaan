@@ -137,7 +137,92 @@ assertTest("Official Google Play package strictly excluded", $exCheck2['is_exclu
 $exCheck3 = ExclusionFilter::isOfficialOrAllowlisted('lumorabank-fake.bsky.social', 'bluesky', $officialAssets);
 assertTest("Impostor handle is NOT excluded", $exCheck3['is_excluded'] === false);
 
-// --- 7. BENCHMARK SUITE EVALUATION ---
+// --- 7. PRODUCTION ARCHITECTURE & RELIABILITY TESTS ---
+echo "\n7. Testing Production Architecture (Transactions, Idempotency, Circuit Breaker, RED Metrics)...\n";
+
+use Pehchaan\Core\Database;
+use Pehchaan\Core\IdempotencyGuard;
+use Pehchaan\Core\CircuitBreaker;
+use Pehchaan\Core\Metrics;
+
+// A. Database Transactions
+try {
+    Database::transaction(function ($pdo) {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS _test_tx (val TEXT)");
+        $pdo->exec("INSERT INTO _test_tx (val) VALUES ('committed')");
+    });
+    $checkTx = Database::getConnection()->query("SELECT val FROM _test_tx WHERE val = 'committed'")->fetch();
+    assertTest("Database Transaction Commits Atomic Work", $checkTx !== false && $checkTx['val'] === 'committed');
+
+    // Rollback test
+    try {
+        Database::transaction(function ($pdo) {
+            $pdo->exec("INSERT INTO _test_tx (val) VALUES ('should_rollback')");
+            throw new Exception("Simulated error inside transaction");
+        });
+    } catch (\Throwable) {}
+
+    $checkRollback = Database::getConnection()->query("SELECT val FROM _test_tx WHERE val = 'should_rollback'")->fetch();
+    assertTest("Database Transaction Rolls Back On Exception", $checkRollback === false);
+    Database::getConnection()->exec("DROP TABLE IF EXISTS _test_tx");
+} catch (\Throwable $e) {
+    assertTest("Database Transaction execution", false, $e->getMessage());
+}
+
+// B. Idempotency Guard
+$idGuard = new IdempotencyGuard();
+$testKey = 'idemp_test_' . uniqid();
+$wsId = 'ws_test_123';
+$path = '/api/brand';
+$body = ['brand_name' => 'Lumora Security'];
+
+$firstCheck = $idGuard->check($testKey, $wsId, $path, $body);
+assertTest("Idempotency key initially reports new/unseen", $firstCheck === null);
+
+$acquired = $idGuard->acquire($testKey, $wsId, $path, $body);
+assertTest("Idempotency key lock acquired", $acquired === true);
+
+$inFlightCheck = $idGuard->check($testKey, $wsId, $path, $body);
+assertTest("In-flight duplicate request returns 409 Conflict", $inFlightCheck !== null && $inFlightCheck['type'] === 'conflict');
+
+$mismatchCheck = $idGuard->check($testKey, $wsId, $path, ['brand_name' => 'Tampered Name']);
+// If still processing or hash changed:
+$idGuard->complete($testKey, 200, ['status' => 'success', 'brand_id' => 42]);
+
+$replayCheck = $idGuard->check($testKey, $wsId, $path, $body);
+assertTest("Completed idempotency key returns exact cached replay", $replayCheck !== null && $replayCheck['type'] === 'replay' && $replayCheck['body']['brand_id'] === 42);
+
+$mismatchAfter = $idGuard->check($testKey, $wsId, $path, ['brand_name' => 'Tampered Payload']);
+assertTest("Mismatched payload for same key rejected with 422", $mismatchAfter !== null && $mismatchAfter['type'] === 'mismatch');
+
+// C. Circuit Breaker
+$cb = new CircuitBreaker(Database::getConnection(), 3, 2); // 3 failures threshold, 2s cooldown
+$testSvc = 'test_external_api_' . uniqid();
+
+assertTest("Circuit breaker initial state is available/CLOSED", $cb->isAvailable($testSvc) === true);
+
+$cb->recordFailure($testSvc);
+$cb->recordFailure($testSvc);
+assertTest("Circuit breaker stays closed before threshold", $cb->isAvailable($testSvc) === true);
+
+$cb->recordFailure($testSvc); // 3rd failure trips the breaker
+assertTest("Circuit breaker trips to OPEN after threshold", $cb->isAvailable($testSvc) === false);
+
+// Wait for cooldown
+sleep(2);
+assertTest("Circuit breaker transitions to probe/HALF_OPEN after cooldown", $cb->isAvailable($testSvc) === true);
+
+$cb->recordSuccess($testSvc);
+assertTest("Circuit breaker resets to CLOSED on successful recovery", $cb->isAvailable($testSvc) === true);
+
+// D. RED Metrics
+$metrics = new Metrics();
+$metrics->record('test_http_duration_ms', 45.2, ['route' => '/api/brand']);
+$metrics->record('test_http_duration_ms', 12.8, ['route' => '/api/health']);
+$summary = $metrics->getSummary(5);
+assertTest("RED Metrics records and calculates summary aggregation", isset($summary['metrics']['test_http_duration_ms']) && $summary['metrics']['test_http_duration_ms']['samples'] >= 2);
+
+// --- 8. BENCHMARK SUITE EVALUATION ---
 echo "\n===============================================================================\n";
 echo "              RUNNING BENCHMARK EVALUATION (76 TEST CASES)                     \n";
 echo "===============================================================================\n";

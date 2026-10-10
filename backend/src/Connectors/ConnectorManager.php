@@ -46,29 +46,64 @@ class ConnectorManager
 
         $brandName = $brandProfile['brand_name'] ?? 'default';
 
+        $circuitBreaker = new \Pehchaan\Core\CircuitBreaker($this->db);
+
         foreach ($selectedSources as $key => $source) {
             $cacheKey = md5("{$key}:{$brandName}");
             
-            // 1. Run live search
-            $res = $source->search($brandProfile);
-
-            if ($res['status'] === 'live' && !empty($res['items'])) {
-                // Save to DB cache
-                $this->saveToCache($cacheKey, $key, $brandName, $res['items']);
-                $statuses[$key] = 'live';
-                $allItems = array_merge($allItems, $res['items']);
-            } else {
-                // 2. Try Fallback to Cache
+            // Check Circuit Breaker before making remote HTTP calls
+            if (!$circuitBreaker->isAvailable($key)) {
                 $cachedItems = $this->getFromCache($cacheKey);
-                if (!empty($cachedItems)) {
-                    $res['status'] = 'cached';
-                    $res['items'] = $cachedItems;
-                    $res['items_count'] = count($cachedItems);
-                    $statuses[$key] = 'cached';
-                    $allItems = array_merge($allItems, $cachedItems);
+                $results[$key] = [
+                    'source' => $key,
+                    'status' => 'circuit_open_fallback',
+                    'items' => $cachedItems,
+                    'items_count' => count($cachedItems),
+                    'message' => "Circuit breaker is OPEN for {$key}. Fast-failed to prevent request timeout; served cached data."
+                ];
+                $statuses[$key] = !empty($cachedItems) ? 'cached' : 'degraded';
+                $allItems = array_merge($allItems, $cachedItems);
+                continue;
+            }
+
+            try {
+                // 1. Run live search
+                $res = $source->search($brandProfile);
+
+                if ($res['status'] === 'live' && !empty($res['items'])) {
+                    $circuitBreaker->recordSuccess($key);
+                    // Save to DB cache
+                    $this->saveToCache($cacheKey, $key, $brandName, $res['items']);
+                    $statuses[$key] = 'live';
+                    $allItems = array_merge($allItems, $res['items']);
                 } else {
-                    $statuses[$key] = 'unavailable';
+                    if ($res['status'] === 'error') {
+                        $circuitBreaker->recordFailure($key);
+                    }
+                    // 2. Try Fallback to Cache
+                    $cachedItems = $this->getFromCache($cacheKey);
+                    if (!empty($cachedItems)) {
+                        $res['status'] = 'cached';
+                        $res['items'] = $cachedItems;
+                        $res['items_count'] = count($cachedItems);
+                        $statuses[$key] = 'cached';
+                        $allItems = array_merge($allItems, $cachedItems);
+                    } else {
+                        $statuses[$key] = 'unavailable';
+                    }
                 }
+            } catch (\Throwable $e) {
+                $circuitBreaker->recordFailure($key);
+                $cachedItems = $this->getFromCache($cacheKey);
+                $res = [
+                    'source' => $key,
+                    'status' => 'fallback_on_error',
+                    'items' => $cachedItems,
+                    'items_count' => count($cachedItems),
+                    'error' => $e->getMessage()
+                ];
+                $statuses[$key] = !empty($cachedItems) ? 'cached' : 'unavailable';
+                $allItems = array_merge($allItems, $cachedItems);
             }
 
             $results[$key] = $res;

@@ -264,6 +264,35 @@ class Database
                 details TEXT,
                 discord_alert_sent INTEGER DEFAULT 0,
                 created_at DATETIME
+            );",
+
+            "CREATE TABLE IF NOT EXISTS idempotency_keys (
+                idempotency_key VARCHAR(128) PRIMARY KEY,
+                workspace_id VARCHAR(64),
+                request_path VARCHAR(128),
+                request_hash VARCHAR(64),
+                response_code INTEGER,
+                response_body TEXT,
+                status VARCHAR(32) DEFAULT 'completed',
+                created_at DATETIME,
+                expires_at DATETIME
+            );",
+
+            "CREATE TABLE IF NOT EXISTS circuit_breaker_states (
+                service_name VARCHAR(64) PRIMARY KEY,
+                state VARCHAR(32) DEFAULT 'CLOSED',
+                failure_count INTEGER DEFAULT 0,
+                last_failure_time INTEGER DEFAULT 0,
+                last_success_time INTEGER DEFAULT 0,
+                cooldown_seconds INTEGER DEFAULT 30
+            );",
+
+            "CREATE TABLE IF NOT EXISTS system_metrics (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                metric_key VARCHAR(64),
+                metric_value REAL,
+                dimensions TEXT,
+                recorded_at DATETIME
             );"
         ];
 
@@ -275,5 +304,62 @@ class Database
     public static function setInstance(?PDO $pdo): void
     {
         self::$instance = $pdo;
+    }
+
+    /**
+     * Executes a callback within a managed ACID transaction.
+     * Automatically commits on success and rolls back on any Throwable.
+     * (Database Transactions Guide Implementation)
+     *
+     * @param callable(PDO): mixed $callback
+     * @return mixed
+     * @throws \Throwable
+     */
+    public static function transaction(callable $callback): mixed
+    {
+        $pdo = self::getConnection();
+        $isExistingTransaction = $pdo->inTransaction();
+
+        if (!$isExistingTransaction) {
+            $pdo->beginTransaction();
+        }
+
+        try {
+            $result = $callback($pdo);
+
+            if (!$isExistingTransaction) {
+                $pdo->commit();
+            }
+
+            return $result;
+        } catch (\Throwable $e) {
+            if (!$isExistingTransaction && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $e;
+        }
+    }
+
+    public static function beginTransaction(): bool
+    {
+        $pdo = self::getConnection();
+        return $pdo->inTransaction() ? true : $pdo->beginTransaction();
+    }
+
+    public static function commit(): bool
+    {
+        $pdo = self::getConnection();
+        return $pdo->inTransaction() ? $pdo->commit() : true;
+    }
+
+    public static function rollBack(): bool
+    {
+        $pdo = self::getConnection();
+        return $pdo->inTransaction() ? $pdo->rollBack() : true;
+    }
+
+    public static function inTransaction(): bool
+    {
+        return self::getConnection()->inTransaction();
     }
 }

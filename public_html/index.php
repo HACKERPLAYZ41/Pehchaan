@@ -71,6 +71,8 @@ use Pehchaan\Connectors\ConnectorManager;
 use Pehchaan\Services\AlertService;
 
 try {
+    $requestStartTime = microtime(true);
+
     // Apply Security Headers (CSP, HSTS, X-Content-Type-Options)
     Response::applySecurityHeaders();
 
@@ -81,7 +83,7 @@ try {
     if ($method === 'OPTIONS') {
         header('Access-Control-Allow-Origin: *');
         header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-        header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, X-Workspace-Token, X-CSRF-Token');
+        header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, X-Workspace-Token, X-CSRF-Token, Idempotency-Key, X-Idempotency-Key');
         http_response_code(204);
         exit;
     }
@@ -99,6 +101,12 @@ try {
             'environment' => 'cPanel Production',
             'dpdp_act_compliant' => true,
         ]);
+    }
+
+    // System RED Telemetry Metrics (Backend Production Monitoring Guide)
+    if ($uri === '/metrics' && $method === 'GET') {
+        $metrics = new \Pehchaan\Core\Metrics();
+        Response::json($metrics->getSummary());
     }
 
 // 1. Rate Limiting Check
@@ -132,6 +140,25 @@ if (!headers_sent()) {
         'samesite' => 'Strict',
     ]);
 }
+
+// 3. Idempotency Guard for Mutating Requests (Preventing Duplicate Actions Guide)
+$idempotencyKey = Request::getHeader('Idempotency-Key') ?? Request::getHeader('X-Idempotency-Key');
+if ($idempotencyKey !== null && in_array($method, ['POST', 'PUT', 'DELETE'], true)) {
+    $guard = new \Pehchaan\Core\IdempotencyGuard();
+    $body = Request::getJson();
+    $cached = $guard->check($idempotencyKey, $workspaceId, $uri, $body);
+
+    if ($cached !== null) {
+        if ($cached['type'] === 'replay') {
+            Response::json($cached['body'], $cached['code'], ['X-Cache-Lookup' => 'HIT-IDEMPOTENT']);
+        }
+        Response::error($cached['message'], $cached['code']);
+    }
+
+    $guard->acquire($idempotencyKey, $workspaceId, $uri, $body);
+}
+
+Response::setContext($idempotencyKey, $requestStartTime);
 
     // --- AUTHENTICATION & CAPTCHA ENDPOINTS ---
     $authService = new \Pehchaan\Services\AuthService();

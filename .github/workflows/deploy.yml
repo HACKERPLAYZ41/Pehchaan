@@ -37,9 +37,11 @@ jobs:
           # 1. Copy built frontend SPA files (index.html, assets, icons)
           cp -r frontend/dist/* cpanel_deploy/
           
-          # 2. Copy production Apache .htaccess and API gateway router
+          # 2. Copy production Apache .htaccess, API gateway router, and SEO assets
           cp public_html/.htaccess cpanel_deploy/.htaccess
           cp public_html/index.php cpanel_deploy/index.php
+          cp public_html/robots.txt cpanel_deploy/robots.txt
+          cp public_html/sitemap.xml cpanel_deploy/sitemap.xml
           mkdir -p cpanel_deploy/api
           cp public_html/api/index.php cpanel_deploy/api/index.php
           

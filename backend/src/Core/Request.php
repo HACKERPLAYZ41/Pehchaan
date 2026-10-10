@@ -83,8 +83,33 @@ class Request
         return null;
     }
 
+    public static function getHeader(string $name, ?string $default = null): ?string
+    {
+        $normalized = strtoupper(str_replace('-', '_', $name));
+        $serverKey = 'HTTP_' . $normalized;
+
+        if (isset($_SERVER[$serverKey])) {
+            return (string)$_SERVER[$serverKey];
+        }
+
+        if (isset($_SERVER[$normalized])) {
+            return (string)$_SERVER[$normalized];
+        }
+
+        if (function_exists('getallheaders')) {
+            $headers = getallheaders();
+            foreach ($headers as $k => $v) {
+                if (strcasecmp($k, $name) === 0) {
+                    return (string)$v;
+                }
+            }
+        }
+
+        return $default;
+    }
+
     public static function getCsrfTokenFromHeader(): ?string
     {
-        return $_SERVER['HTTP_X_CSRF_TOKEN'] ?? null;
+        return self::getHeader('X-CSRF-Token');
     }
 }

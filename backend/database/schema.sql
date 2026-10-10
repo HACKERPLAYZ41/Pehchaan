@@ -159,4 +159,41 @@ CREATE TABLE IF NOT EXISTS `security_audit_logs` (
     INDEX `idx_sec_event_time` (`event_type`, `created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- 11. Idempotency Keys (Prevent Duplicate Mutations & Double Execution)
+CREATE TABLE IF NOT EXISTS `idempotency_keys` (
+    `idempotency_key` VARCHAR(128) NOT NULL,
+    `workspace_id` VARCHAR(64) NOT NULL,
+    `request_path` VARCHAR(128) NOT NULL,
+    `request_hash` VARCHAR(64) NOT NULL,
+    `response_code` INT NOT NULL,
+    `response_body` MEDIUMTEXT NOT NULL,
+    `status` ENUM('processing', 'completed') NOT NULL DEFAULT 'completed',
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `expires_at` DATETIME NOT NULL,
+    PRIMARY KEY (`idempotency_key`),
+    INDEX `idx_idem_expires` (`expires_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 12. Circuit Breaker States (External API Resilience & Graceful Degradation)
+CREATE TABLE IF NOT EXISTS `circuit_breaker_states` (
+    `service_name` VARCHAR(64) NOT NULL,
+    `state` ENUM('CLOSED', 'OPEN', 'HALF_OPEN') NOT NULL DEFAULT 'CLOSED',
+    `failure_count` INT NOT NULL DEFAULT 0,
+    `last_failure_time` INT NOT NULL DEFAULT 0,
+    `last_success_time` INT NOT NULL DEFAULT 0,
+    `cooldown_seconds` INT NOT NULL DEFAULT 30,
+    PRIMARY KEY (`service_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 13. System RED Metrics (Production Telemetry & Observability)
+CREATE TABLE IF NOT EXISTS `system_metrics` (
+    `id` INT AUTO_INCREMENT NOT NULL,
+    `metric_key` VARCHAR(64) NOT NULL,
+    `metric_value` REAL NOT NULL,
+    `dimensions` TEXT NULL,
+    `recorded_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    INDEX `idx_metrics_key_time` (`metric_key`, `recorded_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET FOREIGN_KEY_CHECKS = 1;
