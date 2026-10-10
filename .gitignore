@@ -30,6 +30,6 @@ scratch/
 
 # Local databases
 *.sqlite
-database/
+!.gitkeep
 cpanel_deploy/
 ~$*

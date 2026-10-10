@@ -49,7 +49,8 @@ jobs:
           mkdir -p cpanel_deploy/backend
           cp -r backend/src cpanel_deploy/backend/src
           cp -r backend/config cpanel_deploy/backend/config
-          cp -r backend/database cpanel_deploy/backend/database
+          mkdir -p cpanel_deploy/backend/database
+          if [ -d "backend/database" ]; then cp -r backend/database/* cpanel_deploy/backend/database/ 2>/dev/null || true; fi
           
           # 4. Ensure uploads directory exists with .gitkeep
           mkdir -p cpanel_deploy/uploads
