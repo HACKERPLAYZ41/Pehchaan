@@ -151,7 +151,7 @@ class ConnectorManager
             $stmt = $this->db->prepare("
                 INSERT INTO connector_cache (cache_key, connector_name, query_term, cached_data, expires_at)
                 VALUES (:k, :c, :q, :d, :e)
-                ON DUPLICATE KEY UPDATE cached_data = :d, expires_at = :e
+                ON DUPLICATE KEY UPDATE cached_data = :d2, expires_at = :e2
             ");
             $stmt->execute([
                 ':k' => $cacheKey,
@@ -159,6 +159,8 @@ class ConnectorManager
                 ':q' => $term,
                 ':d' => $json,
                 ':e' => $expiresAt,
+                ':d2' => $json,
+                ':e2' => $expiresAt,
             ]);
         } catch (Exception $e) {
             // Fail open if cache table error

@@ -217,8 +217,8 @@ class BrandService
 
         $profile = $this->saveProfile($workspaceId, $sampleData);
 
-        // Assign default sample logo dhash
-        $up = $this->db->prepare("UPDATE brand_profiles SET logo_dhash = 'f0e0c0800080c0f0', completeness_score = 100 WHERE id = :id");
+        // Assign default sample logo path and dhash
+        $up = $this->db->prepare("UPDATE brand_profiles SET logo_path = '/lumora-bank-logo.png', logo_dhash = 'f0e0c0800080c0f0', completeness_score = 100 WHERE id = :id");
         $up->execute([':id' => $profile['id']]);
 
         return $this->getProfile($workspaceId);

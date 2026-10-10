@@ -98,13 +98,14 @@ class ReviewService
         try {
             $up = $this->db->prepare("
                 UPDATE detections 
-                SET triage_status = :status, triage_notes = :notes, triaged_at = :now, updated_at = :now 
+                SET triage_status = :status, triage_notes = :notes, triaged_at = :triaged_at, updated_at = :updated_at 
                 WHERE id = :id AND workspace_id = :ws
             ");
             $up->execute([
                 ':status' => $newStatus,
                 ':notes' => $notes,
-                ':now' => $now,
+                ':triaged_at' => $now,
+                ':updated_at' => $now,
                 ':id' => $detectionId,
                 ':ws' => $workspaceId,
             ]);

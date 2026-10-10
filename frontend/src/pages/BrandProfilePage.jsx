@@ -43,8 +43,8 @@ export function BrandProfilePage({ onNavigate, brand, setBrand, onLoadSample, on
         official_developer_names: Array.isArray(brand.official_developer_names) ? brand.official_developer_names : [],
         official_domains: Array.isArray(brand.official_domains) ? brand.official_domains : [],
       });
-      if (brand.logo_url) {
-        setLogoPreview(brand.logo_url);
+      if (brand.logo_url || brand.logo_path) {
+        setLogoPreview(brand.logo_url || brand.logo_path);
       }
     }
   }, [brand]);
@@ -261,25 +261,90 @@ export function BrandProfilePage({ onNavigate, brand, setBrand, onLoadSample, on
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#434655', marginBottom: '6px' }}>
                 Official Logo (PNG / JPG / WEBP, Max 2MB, NO SVG)
               </label>
-              <div style={{ border: '2px dashed #cbd5e1', borderRadius: '8px', padding: '20px', textAlign: 'center', backgroundColor: '#f8fafc' }}>
+              
+              <label 
+                htmlFor="brand-logo-file-input"
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: logoPreview ? '2px solid #3b82f6' : '2px dashed #cbd5e1',
+                  borderRadius: '10px',
+                  padding: '20px 16px',
+                  backgroundColor: logoPreview ? '#f0f9ff' : '#f8fafc',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  textAlign: 'center'
+                }}
+              >
                 {logoPreview ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                    <img src={logoPreview} alt="Brand Logo Preview" style={{ width: '64px', height: '64px', objectFit: 'contain', borderRadius: '8px', border: '1px solid #e2e8f0' }} />
-                    <span style={{ fontSize: '12px', color: '#16a34a', fontWeight: 600 }}>Logo selected & verified</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+                    <div style={{
+                      width: '72px',
+                      height: '72px',
+                      borderRadius: '12px',
+                      backgroundColor: '#ffffff',
+                      border: '1px solid #cbd5e1',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.06)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      overflow: 'hidden',
+                      padding: '4px'
+                    }}>
+                      <img 
+                        src={logoPreview} 
+                        alt="Brand Logo Preview" 
+                        style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} 
+                      />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '13px', color: '#1e40af', fontWeight: 700 }}>
+                        {logoFile ? logoFile.name : 'Official Brand Crest Loaded'}
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#16a34a', fontWeight: 600, marginTop: '2px' }}>
+                        ✓ Ready for dHash Vision Scanning
+                      </div>
+                    </div>
+                    <span 
+                      className="btn btn-secondary"
+                      style={{ fontSize: '11px', padding: '4px 12px', height: 'auto', marginTop: '4px', pointerEvents: 'none' }}
+                    >
+                      Change Logo
+                    </span>
                   </div>
                 ) : (
-                  <div style={{ color: '#64748b', fontSize: '13px' }}>
-                    <Upload className="w-8 h-8 text-slate-400 mx-auto mb-2" style={{ margin: '0 auto 8px' }} />
-                    <div>Click to select image</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+                    <div style={{
+                      width: '44px',
+                      height: '44px',
+                      borderRadius: '50%',
+                      backgroundColor: '#e2e8f0',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginBottom: '4px'
+                    }}>
+                      <Upload className="w-5 h-5 text-slate-600" />
+                    </div>
+                    <div style={{ fontSize: '14px', fontWeight: 600, color: '#1e293b' }}>
+                      Click to Browse or Drag Image Here
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#64748b' }}>
+                      PNG, JPG, or WEBP up to 2MB (SVG blocked)
+                    </div>
                   </div>
                 )}
+                
                 <input 
+                  id="brand-logo-file-input"
                   type="file" 
                   accept="image/png, image/jpeg, image/webp" 
                   onChange={handleLogoSelect}
-                  style={{ marginTop: '8px', fontSize: '12px' }}
+                  style={{ display: 'none' }}
                 />
-              </div>
+              </label>
             </div>
           </div>
 

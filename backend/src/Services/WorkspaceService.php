@@ -55,11 +55,12 @@ class WorkspaceService
 
         $stmt = $this->db->prepare("
             INSERT INTO workspaces (id, created_at, last_active_at, expires_at, consent_given, ip_hash, user_agent_hash, status)
-            VALUES (:id, :now, :now, :expires, 0, :ip, :ua, 'active')
+            VALUES (:id, :created, :last_active, :expires, 0, :ip, :ua, 'active')
         ");
         $stmt->execute([
             ':id' => $newId,
-            ':now' => $now,
+            ':created' => $now,
+            ':last_active' => $now,
             ':expires' => $expiresAt,
             ':ip' => $ipHash,
             ':ua' => $uaHash,
