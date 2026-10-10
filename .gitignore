@@ -32,3 +32,4 @@ scratch/
 *.sqlite
 database/
 cpanel_deploy/
+~$*
