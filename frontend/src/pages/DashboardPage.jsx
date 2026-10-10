@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import gsap from 'gsap';
 import { 
   AlertTriangle, 
   Search, 
@@ -15,6 +16,7 @@ import {
 } from 'lucide-react';
 import { Sidebar } from '../components/Sidebar';
 import { NotificationList } from '../components/NotificationList';
+import { GsapThreatTelemetry } from '../components/GsapThreatTelemetry';
 import { api } from '../services/api';
 
 export function DashboardPage({ onNavigate, brand, setBrand, onLoadSample, onResetWorkspace }) {
@@ -59,6 +61,37 @@ export function DashboardPage({ onNavigate, brand, setBrand, onLoadSample, onRes
   const mediumSeverity = detections.filter(d => d.severity === 'MEDIUM').length;
   const underReview = detections.filter(d => d.status === 'under_review').length;
   const newThreats = detections.filter(d => d.status === 'new').length;
+
+  const totalCounterRef = useRef(null);
+  const highCounterRef = useRef(null);
+  const newCounterRef = useRef(null);
+  const reviewCounterRef = useRef(null);
+
+  useEffect(() => {
+    const counterObj = { total: 0, high: 0, newT: 0, review: 0 };
+    gsap.to(counterObj, {
+      total: totalThreats,
+      high: highSeverity,
+      newT: newThreats,
+      review: underReview,
+      duration: 1.2,
+      ease: 'power2.out',
+      onUpdate: () => {
+        if (totalCounterRef.current) totalCounterRef.current.innerText = Math.round(counterObj.total);
+        if (highCounterRef.current) highCounterRef.current.innerText = Math.round(counterObj.high);
+        if (newCounterRef.current) newCounterRef.current.innerText = Math.round(counterObj.newT);
+        if (reviewCounterRef.current) reviewCounterRef.current.innerText = Math.round(counterObj.review);
+      }
+    });
+
+    gsap.from('.stat-counter-card', {
+      scale: 0.95,
+      opacity: 0.5,
+      stagger: 0.08,
+      duration: 0.5,
+      ease: 'back.out(1.4)'
+    });
+  }, [totalThreats, highSeverity, newThreats, underReview]);
 
   return (
     <div className="dashboard-layout-container">
@@ -116,12 +149,12 @@ export function DashboardPage({ onNavigate, brand, setBrand, onLoadSample, onRes
         )}
 
         {/* 4 Stat Metric Cards - Mobile 2x2, Desktop 4 columns */}
-        <div className="stat-cards-grid">
-          <div className="glass-card" style={{ padding: '16px', borderRadius: '10px' }}>
+        <div className="stat-cards-grid" style={{ marginBottom: '20px' }}>
+          <div className="glass-card stat-counter-card" style={{ padding: '16px', borderRadius: '10px' }}>
             <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               Total Threats
             </div>
-            <div style={{ fontSize: '28px', fontWeight: 800, color: '#0f172a', fontFamily: 'var(--font-headline)', lineHeight: 1.1 }}>
+            <div ref={totalCounterRef} style={{ fontSize: '28px', fontWeight: 800, color: '#0f172a', fontFamily: 'var(--font-headline)', lineHeight: 1.1 }}>
               {totalThreats}
             </div>
             <div style={{ fontSize: '11px', color: '#2563eb', marginTop: '4px' }}>
@@ -129,11 +162,11 @@ export function DashboardPage({ onNavigate, brand, setBrand, onLoadSample, onRes
             </div>
           </div>
 
-          <div className="glass-card" style={{ padding: '16px', borderRadius: '10px' }}>
+          <div className="glass-card stat-counter-card" style={{ padding: '16px', borderRadius: '10px' }}>
             <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               High Severity
             </div>
-            <div style={{ fontSize: '28px', fontWeight: 800, color: '#dc2626', fontFamily: 'var(--font-headline)', lineHeight: 1.1 }}>
+            <div ref={highCounterRef} style={{ fontSize: '28px', fontWeight: 800, color: '#dc2626', fontFamily: 'var(--font-headline)', lineHeight: 1.1 }}>
               {highSeverity}
             </div>
             <div style={{ fontSize: '11px', color: '#dc2626', marginTop: '4px' }}>
@@ -141,11 +174,11 @@ export function DashboardPage({ onNavigate, brand, setBrand, onLoadSample, onRes
             </div>
           </div>
 
-          <div className="glass-card" style={{ padding: '16px', borderRadius: '10px' }}>
+          <div className="glass-card stat-counter-card" style={{ padding: '16px', borderRadius: '10px' }}>
             <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               New Unreviewed
             </div>
-            <div style={{ fontSize: '28px', fontWeight: 800, color: '#d97706', fontFamily: 'var(--font-headline)', lineHeight: 1.1 }}>
+            <div ref={newCounterRef} style={{ fontSize: '28px', fontWeight: 800, color: '#d97706', fontFamily: 'var(--font-headline)', lineHeight: 1.1 }}>
               {newThreats}
             </div>
             <div style={{ fontSize: '11px', color: '#d97706', marginTop: '4px' }}>
@@ -153,11 +186,11 @@ export function DashboardPage({ onNavigate, brand, setBrand, onLoadSample, onRes
             </div>
           </div>
 
-          <div className="glass-card" style={{ padding: '16px', borderRadius: '10px' }}>
+          <div className="glass-card stat-counter-card" style={{ padding: '16px', borderRadius: '10px' }}>
             <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               Under Review
             </div>
-            <div style={{ fontSize: '28px', fontWeight: 800, color: '#2563eb', fontFamily: 'var(--font-headline)', lineHeight: 1.1 }}>
+            <div ref={reviewCounterRef} style={{ fontSize: '28px', fontWeight: 800, color: '#2563eb', fontFamily: 'var(--font-headline)', lineHeight: 1.1 }}>
               {underReview}
             </div>
             <div style={{ fontSize: '11px', color: '#2563eb', marginTop: '4px' }}>
@@ -165,6 +198,9 @@ export function DashboardPage({ onNavigate, brand, setBrand, onLoadSample, onRes
             </div>
           </div>
         </div>
+
+        {/* GSAP Powered Live SOC Radar & Threat Telemetry Hub */}
+        <GsapThreatTelemetry activeDetectionsCount={detections.length} isLiveScan={loading} />
 
         {/* Recent Detections List */}
         <div className="glass-card" style={{ padding: '18px', borderRadius: '12px' }}>
