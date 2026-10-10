@@ -55,10 +55,10 @@ export function ScanResultsPage({ onNavigate, brand, onLoadSample, onResetWorksp
       <main className="dashboard-main-content">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
           <div>
-            <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#0f172a' }}>
+            <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#f8fafc' }}>
               Impersonation Telemetry & Scan Results
             </h1>
-            <p style={{ fontSize: '13px', color: '#64748b' }}>
+            <p style={{ fontSize: '13px', color: '#94a3b8' }}>
               Real-time threat discovery across Bluesky Social, Google Play, and Apple App Store.
             </p>
           </div>
@@ -79,8 +79,8 @@ export function ScanResultsPage({ onNavigate, brand, onLoadSample, onResetWorksp
                 padding: '8px 16px',
                 borderRadius: '6px',
                 border: 'none',
-                background: activeTab === 'all' ? '#2563eb' : 'transparent',
-                color: activeTab === 'all' ? '#ffffff' : '#64748b',
+                background: activeTab === 'all' ? 'linear-gradient(135deg, #ff6b00 0%, #ff8800 100%)' : 'transparent',
+                color: activeTab === 'all' ? '#ffffff' : '#94a3b8',
                 fontWeight: 600,
                 fontSize: '13px',
                 cursor: 'pointer',
@@ -94,8 +94,8 @@ export function ScanResultsPage({ onNavigate, brand, onLoadSample, onResetWorksp
                 padding: '8px 16px',
                 borderRadius: '6px',
                 border: 'none',
-                background: activeTab === 'social' ? '#2563eb' : 'transparent',
-                color: activeTab === 'social' ? '#ffffff' : '#64748b',
+                background: activeTab === 'social' ? 'linear-gradient(135deg, #ff6b00 0%, #ff8800 100%)' : 'transparent',
+                color: activeTab === 'social' ? '#ffffff' : '#94a3b8',
                 fontWeight: 600,
                 fontSize: '13px',
                 cursor: 'pointer',
@@ -109,8 +109,8 @@ export function ScanResultsPage({ onNavigate, brand, onLoadSample, onResetWorksp
                 padding: '8px 16px',
                 borderRadius: '6px',
                 border: 'none',
-                background: activeTab === 'apps' ? '#2563eb' : 'transparent',
-                color: activeTab === 'apps' ? '#ffffff' : '#64748b',
+                background: activeTab === 'apps' ? 'linear-gradient(135deg, #ff6b00 0%, #ff8800 100%)' : 'transparent',
+                color: activeTab === 'apps' ? '#ffffff' : '#94a3b8',
                 fontWeight: 600,
                 fontSize: '13px',
                 cursor: 'pointer',
@@ -174,7 +174,7 @@ export function ScanResultsPage({ onNavigate, brand, onLoadSample, onResetWorksp
 
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                      <span style={{ fontSize: '16px', fontWeight: 700, color: '#0f172a', fontFamily: item.detected_handle ? 'var(--font-mono)' : 'inherit' }}>
+                      <span style={{ fontSize: '16px', fontWeight: 700, color: '#f8fafc', fontFamily: item.detected_handle ? 'var(--font-mono)' : 'inherit' }}>
                         {item.detected_handle || item.detected_app_name || 'Flagged Entity'}
                       </span>
                       <span className={`badge ${item.severity === 'HIGH' ? 'badge-threat' : 'badge-warning'}`}>
@@ -182,18 +182,18 @@ export function ScanResultsPage({ onNavigate, brand, onLoadSample, onResetWorksp
                       </span>
                     </div>
 
-                    <div style={{ fontSize: '12px', color: '#64748b', display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-                      <span>Platform: <strong>{item.platform.toUpperCase()}</strong></span>
-                      <span>Signal Type: <strong>{item.match_type || 'String Distance'}</strong></span>
-                      {item.detected_developer_name && <span>Developer: <strong>{item.detected_developer_name}</strong></span>}
+                    <div style={{ fontSize: '12px', color: '#94a3b8', display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                      <span>Platform: <strong style={{ color: '#f8fafc' }}>{item.platform.toUpperCase()}</strong></span>
+                      <span>Signal Type: <strong style={{ color: '#f8fafc' }}>{item.match_type || 'String Distance'}</strong></span>
+                      {item.detected_developer_name && <span>Developer: <strong style={{ color: '#f8fafc' }}>{item.detected_developer_name}</strong></span>}
                     </div>
                   </div>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '11px', color: '#64748b' }}>Similarity Score</div>
-                    <div style={{ fontSize: '18px', fontWeight: 800, color: '#2563eb', fontFamily: 'var(--font-mono)' }}>
+                    <div style={{ fontSize: '11px', color: '#94a3b8' }}>Similarity Score</div>
+                    <div style={{ fontSize: '18px', fontWeight: 800, color: '#ff6b00', fontFamily: 'var(--font-mono)' }}>
                       {Math.round((item.similarity_score || item.name_distance || 0.88) * 100)}%
                     </div>
                   </div>

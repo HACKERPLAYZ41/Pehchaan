@@ -61,7 +61,7 @@ class BlueskySource implements SourceInterface
                 if (!empty($avatarUrl) && filter_var($avatarUrl, FILTER_VALIDATE_URL)) {
                     try {
                         $avatarResp = SSRFGuard::safeGet($avatarUrl, [], 3, 512000);
-                        if ($avatarResp['success'] && !empty($avatarResp['body'])) {
+                        if ($avatarResp['success'] && !empty($avatarResp['body']) && function_exists('imagecreatefromstring')) {
                             $gd = @imagecreatefromstring($avatarResp['body']);
                             if ($gd) {
                                 $avatarDHash = ImageHash::computeDHash($gd);

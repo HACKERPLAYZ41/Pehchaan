@@ -34,14 +34,15 @@ export function Sidebar({ currentView, onNavigate, brand, onLoadSample, onResetW
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: '6px',
-              backgroundColor: '#2563eb',
+              width: '34px',
+              height: '34px',
+              borderRadius: '8px',
+              background: 'linear-gradient(135deg, #ff6b00 0%, #ff8800 100%)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               color: '#ffffff',
+              boxShadow: '0 0 12px rgba(255, 107, 0, 0.4)',
             }}>
               <Shield className="w-5 h-5" />
             </div>
@@ -312,20 +313,21 @@ function NavItem({ icon, label, active, onClick }) {
         alignItems: 'center',
         gap: '10px',
         padding: '10px 12px',
-        borderRadius: '6px',
-        border: 'none',
-        backgroundColor: active ? '#2563eb' : 'transparent',
+        borderRadius: '8px',
+        border: active ? '1px solid rgba(255, 107, 0, 0.5)' : '1px solid transparent',
+        background: active ? 'linear-gradient(135deg, #ff6b00 0%, #ff8800 100%)' : 'transparent',
         color: active ? '#ffffff' : '#94a3b8',
-        fontWeight: active ? 600 : 500,
+        fontWeight: active ? 700 : 500,
         fontSize: '13px',
         cursor: 'pointer',
         textAlign: 'left',
-        transition: 'all 0.15s ease',
+        boxShadow: active ? '0 4px 14px rgba(255, 107, 0, 0.35)' : 'none',
+        transition: 'all 0.2s ease',
       }}
     >
       {icon}
       <span style={{ flex: 1 }}>{label}</span>
-      {active && <ChevronRight className="w-4 h-4" />}
+      {active && <ChevronRight className="w-4 h-4 text-white" />}
     </button>
   );
 }

@@ -78,7 +78,7 @@ class GooglePlaySource implements SourceInterface
                 if (!empty($iconUrl) && filter_var($iconUrl, FILTER_VALIDATE_URL)) {
                     try {
                         $iconResp = SSRFGuard::safeGet($iconUrl, [], 2, 512000);
-                        if ($iconResp['success'] && !empty($iconResp['body'])) {
+                        if ($iconResp['success'] && !empty($iconResp['body']) && function_exists('imagecreatefromstring')) {
                             $gd = @imagecreatefromstring($iconResp['body']);
                             if ($gd) {
                                 $avatarDHash = ImageHash::computeDHash($gd);

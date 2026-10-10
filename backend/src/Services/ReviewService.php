@@ -79,7 +79,21 @@ class ReviewService
         string $newStatus,
         ?string $notes = null
     ): bool {
-        if (!in_array($newStatus, ['confirmed', 'false_positive', 'dismissed', 'pending'], true)) {
+        $statusMap = [
+            'new' => 'pending',
+            'pending' => 'pending',
+            'under_review' => 'pending',
+            'confirmed' => 'confirmed',
+            'action_needed' => 'confirmed',
+            'resolved' => 'confirmed',
+            'false_positive' => 'false_positive',
+            'whitelisted' => 'false_positive',
+            'dismissed' => 'dismissed',
+        ];
+
+        $normalizedStatus = $statusMap[strtolower(trim($newStatus))] ?? $newStatus;
+
+        if (!in_array($normalizedStatus, ['confirmed', 'false_positive', 'dismissed', 'pending'], true)) {
             throw new InvalidArgumentException("Invalid triage status: {$newStatus}");
         }
 
@@ -89,7 +103,7 @@ class ReviewService
         $det = $stmt->fetch();
 
         if (!$det) {
-            throw new InvalidArgumentException("Detection not found.");
+            throw new InvalidArgumentException("Detection not found for id: {$detectionId}");
         }
 
         $now = date('Y-m-d H:i:s');
@@ -102,7 +116,7 @@ class ReviewService
                 WHERE id = :id AND workspace_id = :ws
             ");
             $up->execute([
-                ':status' => $newStatus,
+                ':status' => $normalizedStatus,
                 ':notes' => $notes,
                 ':triaged_at' => $now,
                 ':updated_at' => $now,
@@ -111,10 +125,11 @@ class ReviewService
             ]);
 
             // If marked as False Positive, add to allowlist
-            if ($newStatus === 'false_positive') {
+            if ($normalizedStatus === 'false_positive') {
                 $allow = $this->db->prepare("
                     INSERT INTO allowlist (workspace_id, platform, external_id, reason, created_at)
                     VALUES (:ws, :plat, :ext, :reason, :now)
+                    ON DUPLICATE KEY UPDATE reason = VALUES(reason)
                 ");
                 $allow->execute([
                     ':ws' => $workspaceId,

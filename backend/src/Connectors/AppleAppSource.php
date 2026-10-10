@@ -62,7 +62,7 @@ class AppleAppSource implements SourceInterface
                 if (!empty($artworkUrl) && filter_var($artworkUrl, FILTER_VALIDATE_URL)) {
                     try {
                         $iconResp = SSRFGuard::safeGet($artworkUrl, [], 3, 512000);
-                        if ($iconResp['success'] && !empty($iconResp['body'])) {
+                        if ($iconResp['success'] && !empty($iconResp['body']) && function_exists('imagecreatefromstring')) {
                             $gd = @imagecreatefromstring($iconResp['body']);
                             if ($gd) {
                                 $avatarDHash = ImageHash::computeDHash($gd);

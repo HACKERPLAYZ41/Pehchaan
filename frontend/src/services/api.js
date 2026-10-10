@@ -33,7 +33,8 @@ let mockDetections = [
     similarity_score: 0.91,
     severity: 'HIGH',
     match_type: 'Homoglyph & Keyword Swap',
-    status: 'new',
+    status: 'pending',
+    triage_status: 'pending',
     created_at: '2026-10-09 14:20:00'
   },
   {
@@ -45,7 +46,8 @@ let mockDetections = [
     similarity_score: 0.86,
     severity: 'HIGH',
     match_type: 'Brand Keyword & Logo Clone',
-    status: 'under_review',
+    status: 'confirmed',
+    triage_status: 'confirmed',
     created_at: '2026-10-09 13:10:00'
   },
   {
@@ -57,7 +59,8 @@ let mockDetections = [
     similarity_score: 0.74,
     severity: 'MEDIUM',
     match_type: 'String Distance (0.74)',
-    status: 'new',
+    status: 'pending',
+    triage_status: 'pending',
     created_at: '2026-10-09 11:45:00'
   },
   {
@@ -69,7 +72,8 @@ let mockDetections = [
     similarity_score: 0.82,
     severity: 'MEDIUM',
     match_type: 'Typosquatting',
-    status: 'resolved',
+    status: 'dismissed',
+    triage_status: 'dismissed',
     created_at: '2026-10-08 18:30:00'
   }
 ];
@@ -184,8 +188,9 @@ function handleFallback(endpoint, options) {
     const target = mockDetections.find(d => d.id === data.detection_id);
     if (target) {
       target.status = data.status;
+      target.triage_status = data.status;
     }
-    return { success: true, message: 'Status updated.' };
+    return { success: true, message: `Status updated to ${data.status}.` };
   }
 
   if (endpoint.startsWith('/detections')) {

@@ -59,8 +59,14 @@ export function DashboardPage({ onNavigate, brand, setBrand, onLoadSample, onRes
   const totalThreats = detections.length;
   const highSeverity = detections.filter(d => d.severity === 'HIGH').length;
   const mediumSeverity = detections.filter(d => d.severity === 'MEDIUM').length;
-  const underReview = detections.filter(d => d.status === 'under_review').length;
-  const newThreats = detections.filter(d => d.status === 'new').length;
+  const confirmedThreats = detections.filter(d => {
+    const s = d.triage_status || d.status;
+    return s === 'confirmed' || s === 'action_needed';
+  }).length;
+  const pendingThreats = detections.filter(d => {
+    const s = d.triage_status || d.status || 'pending';
+    return s === 'pending' || s === 'new' || s === 'under_review';
+  }).length;
 
   const totalCounterRef = useRef(null);
   const highCounterRef = useRef(null);
@@ -72,8 +78,8 @@ export function DashboardPage({ onNavigate, brand, setBrand, onLoadSample, onRes
     gsap.to(counterObj, {
       total: totalThreats,
       high: highSeverity,
-      newT: newThreats,
-      review: underReview,
+      newT: pendingThreats,
+      review: confirmedThreats,
       duration: 1.2,
       ease: 'power2.out',
       onUpdate: () => {
@@ -91,7 +97,7 @@ export function DashboardPage({ onNavigate, brand, setBrand, onLoadSample, onRes
       duration: 0.5,
       ease: 'back.out(1.4)'
     });
-  }, [totalThreats, highSeverity, newThreats, underReview]);
+  }, [totalThreats, highSeverity, pendingThreats, confirmedThreats]);
 
   return (
     <div className="dashboard-layout-container">
@@ -107,11 +113,11 @@ export function DashboardPage({ onNavigate, brand, setBrand, onLoadSample, onRes
         {/* Top Bar / Header */}
         <div className="dashboard-header-row">
           <div>
-            <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#0f172a' }}>
+            <h1 style={{ fontSize: '24px', fontWeight: 800, color: '#f8fafc' }}>
               SOC Security Dashboard
             </h1>
-            <p style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>
-              Monitoring impersonation vectors for <strong>{brand?.brand_name || 'My Organization'}</strong>
+            <p style={{ fontSize: '13px', color: '#94a3b8', marginTop: '2px' }}>
+              Monitoring impersonation vectors for <strong style={{ color: '#ff6b00' }}>{brand?.brand_name || 'My Organization'}</strong>
             </p>
           </div>
 
@@ -151,13 +157,13 @@ export function DashboardPage({ onNavigate, brand, setBrand, onLoadSample, onRes
         {/* 4 Stat Metric Cards - Mobile 2x2, Desktop 4 columns */}
         <div className="stat-cards-grid" style={{ marginBottom: '20px' }}>
           <div className="glass-card stat-counter-card" style={{ padding: '16px', borderRadius: '10px' }}>
-            <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            <div style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               Total Threats
             </div>
-            <div ref={totalCounterRef} style={{ fontSize: '28px', fontWeight: 800, color: '#0f172a', fontFamily: 'var(--font-headline)', lineHeight: 1.1 }}>
+            <div ref={totalCounterRef} style={{ fontSize: '28px', fontWeight: 800, color: '#f8fafc', fontFamily: 'var(--font-headline)', lineHeight: 1.1 }}>
               {totalThreats}
             </div>
-            <div style={{ fontSize: '11px', color: '#2563eb', marginTop: '4px' }}>
+            <div style={{ fontSize: '11px', color: '#ff6b00', marginTop: '4px' }}>
               Social & App Stores
             </div>
           </div>
@@ -176,10 +182,10 @@ export function DashboardPage({ onNavigate, brand, setBrand, onLoadSample, onRes
 
           <div className="glass-card stat-counter-card" style={{ padding: '16px', borderRadius: '10px' }}>
             <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              New Unreviewed
+              Pending Triage
             </div>
             <div ref={newCounterRef} style={{ fontSize: '28px', fontWeight: 800, color: '#d97706', fontFamily: 'var(--font-headline)', lineHeight: 1.1 }}>
-              {newThreats}
+              {pendingThreats}
             </div>
             <div style={{ fontSize: '11px', color: '#d97706', marginTop: '4px' }}>
               Awaiting action
@@ -188,13 +194,13 @@ export function DashboardPage({ onNavigate, brand, setBrand, onLoadSample, onRes
 
           <div className="glass-card stat-counter-card" style={{ padding: '16px', borderRadius: '10px' }}>
             <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              Under Review
+              Confirmed Threats
             </div>
             <div ref={reviewCounterRef} style={{ fontSize: '28px', fontWeight: 800, color: '#2563eb', fontFamily: 'var(--font-headline)', lineHeight: 1.1 }}>
-              {underReview}
+              {confirmedThreats}
             </div>
             <div style={{ fontSize: '11px', color: '#2563eb', marginTop: '4px' }}>
-              Takedowns drafted
+              Action needed / draft ready
             </div>
           </div>
         </div>
@@ -206,10 +212,10 @@ export function DashboardPage({ onNavigate, brand, setBrand, onLoadSample, onRes
         <div className="glass-card" style={{ padding: '18px', borderRadius: '12px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
             <div>
-              <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#0f172a' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#f8fafc' }}>
                 Recent Telemetry & Impersonation Flags
               </h3>
-              <p style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+              <p style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>
                 Algorithmic detection across public platforms
               </p>
             </div>
@@ -261,7 +267,7 @@ export function DashboardPage({ onNavigate, brand, setBrand, onLoadSample, onRes
                           {Math.round((item.similarity_score || item.name_distance || 0.85) * 100)}% match
                         </span>
                         <span className="badge badge-info" style={{ textTransform: 'capitalize' }}>
-                          {item.status?.replace('_', ' ') || 'New'}
+                          {(item.triage_status || item.status || 'pending').replace('_', ' ')}
                         </span>
                       </div>
                       <button 
@@ -280,7 +286,7 @@ export function DashboardPage({ onNavigate, brand, setBrand, onLoadSample, onRes
               <div className="hide-mobile" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
                   <thead>
-                    <tr style={{ borderBottom: '1px solid #e2e8f0', color: '#64748b', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', color: '#94a3b8', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                       <th style={{ padding: '12px 16px' }}>Platform</th>
                       <th style={{ padding: '12px 16px' }}>Detected Account / App</th>
                       <th style={{ padding: '12px 16px' }}>Score</th>
@@ -291,15 +297,15 @@ export function DashboardPage({ onNavigate, brand, setBrand, onLoadSample, onRes
                   </thead>
                   <tbody>
                     {detections.slice(0, 5).map((item) => (
-                      <tr key={item.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                        <td style={{ padding: '16px', fontWeight: 600, color: '#0f172a' }}>
+                      <tr key={item.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                        <td style={{ padding: '16px', fontWeight: 600, color: '#f8fafc' }}>
                           {item.platform === 'bluesky' ? '🌐 Bluesky' : item.platform === 'google_play' ? '📱 Google Play' : '🍏 Apple App'}
                         </td>
                         <td style={{ padding: '16px' }}>
-                          <div style={{ fontWeight: 600, color: '#0f172a', fontFamily: item.detected_handle ? 'var(--font-mono)' : 'inherit' }}>
+                          <div style={{ fontWeight: 600, color: '#f8fafc', fontFamily: item.detected_handle ? 'var(--font-mono)' : 'inherit' }}>
                             {item.detected_handle || item.detected_app_name || 'Unknown Entity'}
                           </div>
-                          <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
+                          <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
                             Reason: {item.match_type || 'String similarity'}
                           </div>
                         </td>
@@ -315,7 +321,7 @@ export function DashboardPage({ onNavigate, brand, setBrand, onLoadSample, onRes
                         </td>
                         <td style={{ padding: '16px' }}>
                           <span className="badge badge-info" style={{ textTransform: 'capitalize' }}>
-                            {item.status?.replace('_', ' ') || 'New'}
+                            {(item.triage_status || item.status || 'pending').replace('_', ' ')}
                           </span>
                         </td>
                         <td style={{ padding: '16px', textAlign: 'right' }}>

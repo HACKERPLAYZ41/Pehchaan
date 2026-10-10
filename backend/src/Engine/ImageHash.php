@@ -25,7 +25,7 @@ class ImageHash
                 return null;
             }
             $data = @file_get_contents($imageInput);
-            if (!$data) return null;
+            if (!$data || !function_exists('imagecreatefromstring')) return null;
             $gd = @imagecreatefromstring($data);
         }
 

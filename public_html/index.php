@@ -282,12 +282,19 @@ Response::setContext($idempotencyKey, $requestStartTime);
 
     if ($uri === '/detections/triage' && $method === 'POST') {
         $json = Request::getJson();
-        $detectionId = $json['detection_id'] ?? '';
-        $status = $json['status'] ?? '';
-        $notes = $json['notes'] ?? null;
+        $detectionId = trim((string)($json['detection_id'] ?? ''));
+        $status = trim((string)($json['status'] ?? ''));
+        $notes = isset($json['notes']) ? (string)$json['notes'] : null;
+
+        if ($detectionId === '') {
+            Response::error("detection_id parameter is required.", 400);
+        }
+        if ($status === '') {
+            Response::error("status parameter is required.", 400);
+        }
 
         $ok = $reviewService->updateStatus($workspaceId, $detectionId, $status, $notes);
-        Response::json(['success' => $ok, 'message' => "Detection status updated to '{$status}'."]);
+        Response::json(['success' => $ok, 'message' => "Detection status updated successfully."]);
     }
 
     // --- EXPORT & TAKEDOWN ENDPOINTS ---
