@@ -17,6 +17,24 @@ class IdempotencyGuard
     public function __construct(?PDO $db = null)
     {
         $this->db = $db ?? Database::getConnection();
+        $this->ensureTable();
+    }
+
+    private function ensureTable(): void
+    {
+        try {
+            $this->db->exec("CREATE TABLE IF NOT EXISTS idempotency_keys (
+                idempotency_key VARCHAR(128) PRIMARY KEY,
+                workspace_id VARCHAR(64),
+                request_path VARCHAR(128),
+                request_hash VARCHAR(64),
+                response_code INTEGER,
+                response_body TEXT,
+                status VARCHAR(32) DEFAULT 'completed',
+                created_at DATETIME,
+                expires_at DATETIME
+            );");
+        } catch (\Throwable) {}
     }
 
     /**

@@ -21,6 +21,21 @@ class CircuitBreaker
         $this->db = $db ?? Database::getConnection();
         $this->failureThreshold = $failureThreshold;
         $this->cooldownSeconds = $cooldownSeconds;
+        $this->ensureTable();
+    }
+
+    private function ensureTable(): void
+    {
+        try {
+            $this->db->exec("CREATE TABLE IF NOT EXISTS circuit_breaker_states (
+                service_name VARCHAR(64) PRIMARY KEY,
+                state VARCHAR(32) DEFAULT 'CLOSED',
+                failure_count INTEGER DEFAULT 0,
+                last_failure_time INTEGER DEFAULT 0,
+                last_success_time INTEGER DEFAULT 0,
+                cooldown_seconds INTEGER DEFAULT 30
+            );");
+        } catch (\Throwable) {}
     }
 
     public function isAvailable(string $service): bool

@@ -170,6 +170,35 @@ class ApiIntegrationTest
                 discord_alert_sent INTEGER NOT NULL DEFAULT 0,
                 created_at DATETIME NOT NULL
             );
+
+            CREATE TABLE IF NOT EXISTS circuit_breaker_states (
+                service_name VARCHAR(64) PRIMARY KEY,
+                state VARCHAR(32) DEFAULT 'CLOSED',
+                failure_count INTEGER DEFAULT 0,
+                last_failure_time INTEGER DEFAULT 0,
+                last_success_time INTEGER DEFAULT 0,
+                cooldown_seconds INTEGER DEFAULT 30
+            );
+
+            CREATE TABLE IF NOT EXISTS idempotency_keys (
+                idempotency_key VARCHAR(128) PRIMARY KEY,
+                workspace_id VARCHAR(64),
+                request_path VARCHAR(128),
+                request_hash VARCHAR(64),
+                response_code INTEGER,
+                response_body TEXT,
+                status VARCHAR(32) DEFAULT 'completed',
+                created_at DATETIME,
+                expires_at DATETIME
+            );
+
+            CREATE TABLE IF NOT EXISTS system_metrics (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                metric_key VARCHAR(64),
+                metric_value REAL,
+                dimensions TEXT,
+                recorded_at DATETIME
+            );
         ");
 
         Database::setInstance($pdo);

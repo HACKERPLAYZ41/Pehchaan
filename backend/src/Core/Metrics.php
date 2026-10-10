@@ -17,6 +17,20 @@ class Metrics
     public function __construct(?PDO $db = null)
     {
         $this->db = $db ?? Database::getConnection();
+        $this->ensureTable();
+    }
+
+    private function ensureTable(): void
+    {
+        try {
+            $this->db->exec("CREATE TABLE IF NOT EXISTS system_metrics (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                metric_key VARCHAR(64),
+                metric_value REAL,
+                dimensions TEXT,
+                recorded_at DATETIME
+            );");
+        } catch (\Throwable) {}
     }
 
     public function record(string $metricKey, float $value, array $dimensions = []): void
